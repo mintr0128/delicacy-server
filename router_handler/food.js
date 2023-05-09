@@ -5,6 +5,9 @@ const reg_fun = require('../reg/user')
 const { log } = require('console')
 const { resolve } = require('path')
 const { promises } = require('dns')
+const geoip = require('geoip-lite')
+const os = require('os')
+
 exports.insFoodinfo = (req, res) => {
     const sql = 'insert into pd_info_foods set ?'
     const { name, decs, zhuliao, fuliao, taste, spendtime, diffcu, auth, f_id, g_id, picture } = req.body
@@ -78,8 +81,9 @@ exports.getFoodNav = (req, res) => {
                 results[index].children = children[index]
                 return results[index]
             })
+            
             res.send({
-                status: '200',
+                status: 200,
                 message: '获取首页导航栏数据成功！',
                 data: foodNav
             })
@@ -144,10 +148,12 @@ exports.getFoodinfoData = (req, res) => {
     const { id } = req.body
     db.query(sql, id, (err, result) => {
         if (err) return res.cc(err)
-        let { zhuliao, fuliao, auth } = result[0]
+        let { zhuliao, fuliao, auth, picture } = result[0]
         zhuliao = zhuliao.split('、')
         fuliao = fuliao.split('、')
         auth = auth.split('、')[0].toString()
+
+        picture = reg_fun.changePicUrl(picture)
         res.send({
             status: '200',
             message: '获取美食详情数据成功！',
@@ -155,7 +161,8 @@ exports.getFoodinfoData = (req, res) => {
                 ...result[0],
                 zhuliao: zhuliao,
                 fuliao: fuliao,
-                auth: auth
+                auth: auth,
+                picture: picture
             }
         })
     })
@@ -198,6 +205,7 @@ exports.getFooddetail = (req, res) => {
         if (err) return res.cc(err)
         let { picture, detail } = results[0]
         picture = picture.split('*'),
+        picture = reg_fun.changePicUrl(picture)
             detail = detail.split('*'),
             results = {
                 ...results[0],
@@ -207,6 +215,7 @@ exports.getFooddetail = (req, res) => {
                 detl: detail.length,
                 isequPicDetLength: picture.length === detail.length ? true : false
             }
+
         res.send({
             status: '200',
             message: '获取食物详情描述数据成功！',
@@ -337,6 +346,14 @@ exports.getUsersearchlist = (req, res) => {
 }
 exports.getLikenum = (req, res) => {
     const { namedetail, u_id } = req.body
+    // const  ips =  req.headers['x-forwarded-for']
+    //    const  ips =  '192.168.1.76'
+    //     setTimeout(()=>{
+    //         console.log('ip:',ips);
+    //         console.log('ipPretty',geoip.pretty(ips));
+    //         console.log('ipLookup',geoip.lookup(ips));
+    //     },1000)
+
     const sql = ` SELECT * FROM app_db.pd_info_fooddetail where namedetail = '${namedetail}';`
     db.query(sql, (err, results) => {
         if (err || results.length != 1) {
@@ -346,7 +363,9 @@ exports.getLikenum = (req, res) => {
         if (results[0].u_id == 'null') {
             checkList = []
         } else {
+            
             checkList = JSON.parse(results[0].u_id)
+            
         }
         let boolres = reg_fun.boolx(checkList, 'u_id', u_id)
 

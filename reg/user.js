@@ -110,8 +110,8 @@ exports.boolx = (objs, K, val) => {
     ind: null
   }
   if (objs.length == 0) {
-    
-    return{
+
+    return {
       bool: false,
       ind: -1
     }
@@ -125,6 +125,61 @@ exports.boolx = (objs, K, val) => {
     })
   })
   return boolxRes
+}
+
+
+//本机ip http://192.168.250.85:3033
+const os = require('os')
+function getIpAddress() {
+  let { WLAN } = os.networkInterfaces()
+  let ipv4Addess = WLAN.filter(v => {
+    return v.family == 'IPv4'
+  })
+  return `http://${ipv4Addess[0].address}:3033`
+}
+exports.baseUrl = getIpAddress()
+
+exports.changePicUrl = (val) => {
+  let res = Object.prototype.toString.call(val)
+  if (res == '[object String]') {
+    return val.replace('http://127.0.0.1:3007', getIpAddress())
+  } else if (res == '[object Array]') {
+    return val.map((item) => {
+      return item.replace('http://127.0.0.1:3007', getIpAddress())
+    })
+  } else {
+    return 'http://127.0.0.1:3007'
+  }
+}
+function changePicUrl(val, keys = 'picture', coverStr = 'http://192.168.250.85:3033') {
+  let res = Object.prototype.toString.call(val)
+  let result = val
+  //如果是字符串
+  if (res == '[object String]') {
+    result = val.replace('http://127.0.0.1:3007', getIpAddress())
+  } else if (res == '[object Array]') {
+    val.forEach((element, index) => {
+      result[index] = changePicUrl(element)
+    });
+  } else if (res == '[object Object]') {
+    for (const key in result) {
+      if (val.hasOwnProperty('imgUrl') && val.imgUrl != null) {
+        val.imgUrl = changePicUrl(val.imgUrl)
+      }
+      if (val.hasOwnProperty('user_pic') && val.user_pic != null) {
+        val.user_pic = changePicUrl(val.user_pic)
+      }
+      if (val.hasOwnProperty('children') && val.children != null) {
+        val.children = changePicUrl(val.children)
+      }
+      if (val.hasOwnProperty('picture') && val.picture != null) {
+        val.picture = changePicUrl(val.picture)
+      }
+    }
+  } else {
+    result = 'http://127.0.0.1:3007'
+  }
+  return result
 }
 
 
