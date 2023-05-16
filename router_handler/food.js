@@ -10,8 +10,8 @@ const os = require('os')
 
 exports.insFoodinfo = (req, res) => {
     const sql = 'insert into pd_info_foods set ?'
-    const { name, decs, zhuliao, fuliao, taste, spendtime, diffcu, auth, f_id, g_id, picture } = req.body
-    db.query(sql, { name, decs, zhuliao, fuliao, taste, spendtime, diffcu, auth, f_id, g_id, picture }, (err, results) => {
+    const { name, describe, zhuliao, fuliao, taste, spendtime, diffcu, auth, f_id, g_id, picture } = req.body
+    db.query(sql, { name, describe, zhuliao, fuliao, taste, spendtime, diffcu, auth, f_id, g_id, picture }, (err, results) => {
         if (err) {
             return res.cc(err)
         }
@@ -81,7 +81,7 @@ exports.getFoodNav = (req, res) => {
                 results[index].children = children[index]
                 return results[index]
             })
-            
+
             res.send({
                 status: 200,
                 message: '获取首页导航栏数据成功！',
@@ -203,24 +203,32 @@ exports.getFooddetail = (req, res) => {
     const { f_id } = req.body
     db.query(sql, f_id, (err, results) => {
         if (err) return res.cc(err)
-        let { picture, detail } = results[0]
-        picture = picture.split('*'),
-        picture = reg_fun.changePicUrl(picture)
+        try {
+            let { picture, detail } = results[0]
+            picture = picture.split('*'),
+                picture = reg_fun.changePicUrl(picture)
             detail = detail.split('*'),
-            results = {
-                ...results[0],
-                picture: picture,
-                detail: detail,
-                picl: picture.length,
-                detl: detail.length,
-                isequPicDetLength: picture.length === detail.length ? true : false
-            }
+                results = {
+                    ...results[0],
+                    picture: picture,
+                    detail: detail,
+                    picl: picture.length,
+                    detl: detail.length,
+                    isequPicDetLength: picture.length === detail.length ? true : false
+                }
+            res.send({
+                status: '200',
+                message: '获取食物详情描述数据成功！',
+                result: results
+            })
+        } catch (error) {
+            res.send({
+                status: '400',
+                message: '暂无制作流程数据，请联系管理员插入数据！',
 
-        res.send({
-            status: '200',
-            message: '获取食物详情描述数据成功！',
-            result: results
-        })
+            })
+        }
+
     })
 }
 exports.gerFoodcomment = (req, res) => {
@@ -303,7 +311,7 @@ exports.getSearchShowlist = (req, res) => {
                 v.comml = val[i]
             })
             res.send({
-                status: '200',
+                status: 200,
                 message: '获取食物分类菜单成功！',
                 name: name,
                 result: results,
@@ -363,9 +371,9 @@ exports.getLikenum = (req, res) => {
         if (results[0].u_id == 'null') {
             checkList = []
         } else {
-            
+
             checkList = JSON.parse(results[0].u_id)
-            
+
         }
         let boolres = reg_fun.boolx(checkList, 'u_id', u_id)
 

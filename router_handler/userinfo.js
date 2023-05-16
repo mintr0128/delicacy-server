@@ -6,9 +6,10 @@ const upload = multer({ dest: 'uploads/' })
 const jwt = require('jsonwebtoken')
 const config = require('../config')
 const { json } = require('express')
-const { number } = require('joi')
+const { number, object } = require('joi')
 const reg_fun = require('../reg/user')
 const fs = require('fs')
+const { promises } = require('dns')
 //获取用户信息
 exports.getuserinfo = (req, res) => {
     const sqlStr = `select id, username, nickname, email, status,user_pic  from ev_users where id=?`
@@ -77,9 +78,7 @@ exports.updateUserPassword = (req, res) => {
 }
 //更新图像 "data:image/png;base64,VE9PTUFOWVNFQ1JFVFM="
 exports.updateUserAvatar = (req, res) => {
-
     const sql = 'update ev_users set user_pic=? where id=?'
-
     db.query(sql, [req.body.avatar, req.user.id], (err, results) => {
         if (err) {
             return res.cc(err)
@@ -161,7 +160,7 @@ exports.insFoodlike = (req, res) => {
                 like = checkList.length
             }
         }
-      //  console.log(checkList);
+        //  console.log(checkList);
         const sql2 = `update app_db.pd_info_fooddetail set pd_info_fooddetail.u_id = ? ,pd_info_fooddetail.like = ? where namedetail = '${namedetail}';`
         db.query(sql2, [JSON.stringify(checkList), like], (err, results) => {
             if (err) return res.cc(err)
@@ -270,4 +269,287 @@ exports.insUserPic = (req, res) => {
         res.cc(error)
     }
 }
+function filterArr(res, key1, key2, id) {
+    let resarr = []
+    res.forEach(v => {
+        let paresRes = JSON.parse(v[key1])
+        if (Array.isArray(paresRes)) {
+            paresRes.forEach(item => {
+                if (item[key2] == id) {
+                    resarr.push(v)
+                }
+            })
+        }
+    })
+    return resarr
+}
+function PROMISEFOOD(v) {
+    return new Promise((resolve, reject) => {
+        const sqlStr = `SELECT * FROM app_db.pd_info_foods where id  =${v};`
+        db.query(sqlStr, (err, resultsss) => {
+            resolve({
+                ids: v,
+                names: resultsss[0].name,
+                zhuliao: resultsss[0].zhuliao,
+                taste: resultsss[0].taste,
+                auth: resultsss[0].auth,
+                foodpicture: resultsss[0].picture
+            })
+        })
+    })
+
+}
+exports.getLikeFood = (req, res) => {
+    let sqlStr = `SELECT * FROM app_db.pd_info_fooddetail;`
+    db.query(sqlStr, (err, results) => {
+        if (err) {
+            return res.cc(err)
+        }
+        let resARRS = filterArr(results, 'u_id', 'u_id', req.user.id)
+        let foodmap = []
+        resARRS.forEach(v => {
+            foodmap.push(PROMISEFOOD(v.f_id))
+        })
+        Promise.all(foodmap).then((val) => {
+            if (val.length == resARRS.length) {
+                let finalarr = resARRS.map((item, index) => {
+                    return Object.assign(resARRS[index], val[index])
+                })
+                res.send({
+                    status: 200,
+                    message: '获取个人点赞信息成功！',
+                    results: finalarr
+                })
+            }
+        }).catch(() => {
+            res.send({
+                status: 200,
+                message: '获取个人点赞信息成功！',
+                results: resARRS
+            })
+        })
+
+    })
+
+}
+
+exports.getCollectFood = (req, res) => {
+    let sqlStr = `SELECT * FROM app_db.pd_info_fooddetail;`
+    db.query(sqlStr, (err, results) => {
+        if (err) {
+            return res.cc(err)
+        }
+        let resARRS = filterArr(results, 'coll_cont', 'u_id', req.user.id)
+        let foodmap = []
+        resARRS.forEach(v => {
+            foodmap.push(PROMISEFOOD(v.f_id))
+        })
+        Promise.all(foodmap).then((val) => {
+            if (val.length == resARRS.length) {
+                let finalarr = resARRS.map((item, index) => {
+                    return Object.assign(resARRS[index], val[index])
+                })
+                res.send({
+                    status: 200,
+                    message: '获取个人收藏信息成功！',
+                    results: finalarr
+                })
+            }
+        }).catch(() => {
+            res.send({
+                status: 200,
+                message: '获取个人收藏信息成功！',
+                results: resARRS
+            })
+        })
+    })
+}
+
+exports.getuserComment = (req, res) => {
+    const sqlStr = `SELECT * FROM app_db.pd_comment where pd_comment.u_id = ${req.user.id};`
+    db.query(sqlStr, (err, results) => {
+        if (err) {
+            return res.cc(err)
+        }
+        let foodmap = []
+        results.forEach(v => {
+            foodmap.push(PROMISEFOOD(v.f_id))
+        })
+        Promise.all(foodmap).then((val) => {
+            if (val.length == results.length) {
+                let finalarr = results.map((item, index) => {
+                    return Object.assign(results[index], val[index])
+                })
+                res.send({
+                    status: 200,
+                    message: '获取个人留言信息成功！',
+                    results: finalarr
+                })
+            }
+        }).catch(() => {
+            res.send({
+                status: 200,
+                message: '获取个人留言信息成功！',
+                results: results
+            })
+        })
+    })
+}
+
+exports.getAdminallfood = (req, res) => {
+    const sqlStr = 'SELECT * FROM app_db.pd_info_foods;'
+    db.query(sqlStr, (err, results) => {
+        if (err) {
+            return res.cc(err)
+        }
+        if (req.user.id != 1) {
+            return res.cc('没有权限！')
+        }
+        res.send({
+            status: 200,
+            message: '获取食谱列表信息成功！',
+            results: results
+        })
+    })
+}
+
+exports.deleteAdminallfood = (req, res) => {
+    const sqlStr = `delete from  app_db.pd_info_foods  where id = ${req.body.id}`
+    db.query(sqlStr, (err, results) => {
+        if (err) {
+            return res.cc(err)
+        }
+        if (results.affectedRows !== 1) return res.cc('删除菜品失败！')
+        res.send({
+            status: 200,
+            message: '删除菜品成功！',
+        })
+    })
+}
+
+exports.getAdminalluser = (req, res) => {
+    const sqlStr = `SELECT app_db.ev_users.id,app_db.ev_users.username,app_db.ev_users.nickname,app_db.ev_users.user_pic,app_db.ev_users.email  FROM app_db.ev_users;`
+    db.query(sqlStr, (err, results) => {
+        if (err) {
+            return res.cc(err)
+        }
+        if (req.user.id != 1) {
+            return res.cc('没有权限！')
+        }
+        results.forEach((v, i) => {
+            if (v.id == 1) {
+                results.splice(i, 1)
+            }
+        })
+        res.send({
+            status: 200,
+            message: '获取用户列表信息成功！',
+            results: results
+        })
+    })
+}
+exports.deleteAdminalluser = (req, res) => {
+    const sqlStr = `delete from  app_db.ev_users  where id = ${req.body.id}`
+    db.query(sqlStr, (err, results) => {
+        if (err) {
+            return res.cc(err)
+        }
+        if (results.affectedRows !== 1) return res.cc('删除用户失败！')
+        res.send({
+            status: 200,
+            message: '删除用户成功！',
+        })
+    })
+}
+
+exports.getAdminallComment = (req, res) => {
+    const sqlStr = `SELECT * FROM app_db.pd_comment;`
+    db.query(sqlStr, (err, results) => {
+        if (err) {
+            return res.cc(err)
+        }
+        if (req.user.id != 1) {
+            return res.cc('没有权限！')
+        }
+        let foodmap = []
+        results.forEach(v => {
+            foodmap.push(PROMISEFOOD(v.f_id))
+        })
+        Promise.all(foodmap).then((val) => {
+            if (val.length == results.length) {
+                let finalarr = results.map((item, index) => {
+                    return Object.assign(results[index], val[index])
+                })
+                res.send({
+                    status: 200,
+                    message: '获取留言列表成功！',
+                    results: finalarr
+                })
+            }
+        }).catch(() => {
+            res.send({
+                status: 200,
+                message: '获取留言列表成功！',
+                results: results
+            })
+        })
+    })
+}
+
+exports.deleteAdminallComment = (req, res) => {
+    const sqlStr = `delete from  app_db.pd_comment  where id = ${req.body.id}`
+    db.query(sqlStr, (err, results) => {
+        if (err) {
+            return res.cc(err)
+        }
+        if (results.affectedRows !== 1) return res.cc('删除留言失败！')
+        res.send({
+            status: 200,
+            message: '删除留言成功！',
+        })
+    })
+}
+
+exports.getAdminFoodClassify = (req, res) => {
+    const sqlStr = `SELECT * FROM app_db.pd_info_goods;`
+    db.query(sqlStr, (err, results) => {
+        if (err) {
+            return res.cc(err)
+        }
+        if (req.user.id != 1) {
+            return res.cc('没有权限！')
+        }
+        res.send({
+            status: 200,
+            message: '获取二级分类列表成功！',
+            results: results
+        })
+    })
+}
+exports.canInsertFoodMethod = (req, res) => {
+    const sql1 = `SELECT app_db.pd_info_foods.id,app_db.pd_info_foods.name FROM app_db.pd_info_foods;`
+    db.query(sql1, (err, results) => {
+        if (err) {
+            return res.cc(err)
+        }
+        if (req.user.id != 1) {
+            return res.cc('没有权限！')
+        }
+        const sql2 = `SELECT app_db.pd_info_fooddetail.id,app_db.pd_info_fooddetail.namedetail,app_db.pd_info_fooddetail.f_id FROM app_db.pd_info_fooddetail;`
+        db.query(sql2, (err, resl) => {
+            if (err) {
+                return res.cc(err)
+            }
+            //数组差集 results-resl
+            let canInsFood =  results.filter(x => !resl.find(y => x.id == y.f_id))
+            res.send({
+                status: 200,
+                message: '获取增添方法列表成功！',
+                results: canInsFood, 
+            })
+        })
+    })
+}
+
+
 

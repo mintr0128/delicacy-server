@@ -34,5 +34,27 @@ router.post('/insFoodlike',userinfo_handler.insFoodlike)
 router.post('/insFoodCollect',userinfo_handler.insFoodCollect)
 //上传用户图像
 router.post('/insUserPic',upload.single('user_pic'),userinfo_handler.insUserPic)
+
+//用户点赞信息
+router.get('/getLikeFood',userinfo_handler.getLikeFood)
+//用户收藏信息
+router.get('/getCollectFood',userinfo_handler.getCollectFood)
+//用户留言信息
+router.get('/getuserComment',userinfo_handler.getuserComment)
+
+//admin权限
+router.get('/getAdminallfood',userinfo_handler.getAdminallfood)
+router.post('/deleteAdminallfood',userinfo_handler.deleteAdminallfood)
+    
+router.get('/getAdminalluser',userinfo_handler.getAdminalluser)
+router.post('/deleteAdminalluser',userinfo_handler.deleteAdminalluser)
+
+router.get('/getAdminallComment',userinfo_handler.getAdminallComment)
+router.post('/deleteAdminallComment',userinfo_handler.deleteAdminallComment)
+
+
+router.get('/getAdminFoodClassify',userinfo_handler.getAdminFoodClassify)
+
+router.get('/canInsertFoodMethod',userinfo_handler.canInsertFoodMethod)
 // 向外共享路由对象
 module.exports = router
