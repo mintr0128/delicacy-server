@@ -2,7 +2,7 @@
 
 const joi = require('joi')
 /**
- * string() 值必须是字符串
+ * string()   
  * alphanum() 值只能是包含 a-zA-Z0-9 的字符串
  * min(length) 最小长度
  * max(length) 最大长度

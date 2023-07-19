@@ -368,7 +368,7 @@ exports.getLikenum = (req, res) => {
             return res.cc('err')
         }
         let checkList = []
-        if (results[0].u_id == 'null') {
+        if (results[0].u_id == 'null' ||results[0].u_id ==null ) {
             checkList = []
         } else {
 

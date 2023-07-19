@@ -45,16 +45,14 @@ router.get('/getuserComment',userinfo_handler.getuserComment)
 //admin权限
 router.get('/getAdminallfood',userinfo_handler.getAdminallfood)
 router.post('/deleteAdminallfood',userinfo_handler.deleteAdminallfood)
-    
+
 router.get('/getAdminalluser',userinfo_handler.getAdminalluser)
 router.post('/deleteAdminalluser',userinfo_handler.deleteAdminalluser)
 
 router.get('/getAdminallComment',userinfo_handler.getAdminallComment)
 router.post('/deleteAdminallComment',userinfo_handler.deleteAdminallComment)
 
-
 router.get('/getAdminFoodClassify',userinfo_handler.getAdminFoodClassify)
-
 router.get('/canInsertFoodMethod',userinfo_handler.canInsertFoodMethod)
 // 向外共享路由对象
 module.exports = router
